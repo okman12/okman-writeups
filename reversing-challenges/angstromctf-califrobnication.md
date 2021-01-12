@@ -86,7 +86,7 @@ char *strfry (char *string)
 
 ```
 
-and lo and behold, if we look at how the random number generator is seeded here, with the line `__initstate_r (time ((time_t *) NULL) ^ getpid (), state, sizeof (state), &rdata)` - this seeds it with completely predictable data! `time(NULL)` returns the current UNIX time \(seconds since epoch\) and `getpid()`, predictably, returns the PID of the process this is running in.
+and lo and behold, if we look at how the random number generator is seeded here, with the line `__initstate_r (time ((time_t *) NULL) ^ getpid (), state, sizeof (state), &rdata)` - this seeds it with completely predictable data! `time(NULL)` returns the current UNIX time \(seconds since epoch\) and `getpid()`, predictably, returns the PID of the process this is running in - the state is simply these two integers combined via XOR.
 
 So, all we need to recreate the random state is the time the program was run, and the PID of the process it ran in - then we can simply run through the same steps as the program to find out which letters were swapped, and de-fry our flag!
 
