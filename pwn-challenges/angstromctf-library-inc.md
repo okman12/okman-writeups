@@ -1,2 +1,2 @@
-# AngstromCTF - Library Inc
+# AngstromCTF - LIBrary in C
 
