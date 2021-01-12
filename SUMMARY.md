@@ -8,6 +8,7 @@
   * [HTB - Dream Diary 1](pwn-challenges/htb-dream-diary-1.md)
   * [HTB - Hunting](pwn-challenges/htb-hunting.md)
   * [HTB - What does the f say?](pwn-challenges/htb-what-does-the-f-say.md)
+  * [PicoCTF - Messy Malloc](pwn-challenges/picoctf-messy-malloc.md)
   * [Zh3r0 CTF - x32x64](pwn-challenges/untitled.md)
 * [Reversing challenges](reversing-challenges/README.md)
   * [AngstromCTF - A Happy Family \(reversing part\)](reversing-challenges/angstromctf-a-happy-family-reversing-part.md)
