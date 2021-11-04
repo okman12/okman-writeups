@@ -6,5 +6,4 @@ TODO: actually add the rest of my favourite challenges (lazy)
 
 {% embed url="https://ctftime.org/user/76590" %}
 
-
-
+{% embed url="https://www.hackthebox.com/home/users/profile/44357" %}
