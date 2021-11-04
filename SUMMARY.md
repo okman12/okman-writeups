@@ -18,6 +18,7 @@
   * [AngstromCTF - Califrobnication](reversing-challenges/angstromctf-califrobnication.md)
   * [AngstromCTF - Masochistic Sudoku](reversing-challenges/angstromctf-masochistic-sudoku.md)
   * [RedpwnCTF - Chezzboard](reversing-challenges/untitled.md)
+  * [RACTF - Medea](reversing-challenges/ractf-medea.md)
 * [Web challenges](web-challenges/README.md)
   * [ALLES!CTF - Amazing Crypto WAF](web-challenges/alles-ctf-amazing-crypto-waf.md)
   * [PwnEd - Cheesecake Complaints](web-challenges/pwned-cheesecake-complaints.md)
