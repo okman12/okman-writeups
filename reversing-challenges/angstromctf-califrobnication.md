@@ -147,12 +147,12 @@ void main() {
         // and swaps the char at i with the char at j
         // so to undo this, we have to generate all of the j values, then go in reverse
 
-        for (size_t i = 0; i < len - 1; ++i) {
+        for (int i = 0; i < len - 1; ++i) {
 	    //__random_r(&rdata, &j_vals[i]);
 	    random_r(&rdata, &j_vals[i]);
 	}
 	// now we have all the j vals, go in reverse
-	for (size_t i = len - 1; i > 0; --i) {
+	for (int i = len - 1; i >= 0; --i) {
 	    curr_j = j_vals[i] % (len - i) + i;
             printf("%i|%i\n",j_vals[i],curr_j);
 	    c = output[i];
@@ -164,6 +164,6 @@ void main() {
 }
 ```
 
-Compiling and running this gives us the flag - `rctf{dream_of_califaobnication_1f6d458091cad254}`!
+Compiling and running this gives us the flag - `actf{dream_of_califrobnication_1f6d458091cad254}`!
 
 I really enjoyed this challenge, showing off a peculiarity with a little-known C standard library function and encouraging me to find a weakness in somewhere you normally never look!
