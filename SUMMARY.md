@@ -15,7 +15,7 @@
   * [PicoCTF - Messy Malloc](pwn-challenges/picoctf-messy-malloc.md)
   * [PicoCTF - Kit Engine](pwn-challenges/picoctf-kit-engine.md)
   * [PicoCTF - Download Horsepower](pwn-challenges/picoctf-download-horsepower.md)
-* [Zh3r0 CTF - x32x64](untitled.md)
+  * [Zh3r0 CTF - x32x64](pwn-challenges/untitled.md)
 * [Reversing challenges](reversing-challenges/README.md)
   * [AngstromCTF - Califrobnication](reversing-challenges/angstromctf-califrobnication.md)
   * [AngstromCTF - Masochistic Sudoku](reversing-challenges/angstromctf-masochistic-sudoku.md)
