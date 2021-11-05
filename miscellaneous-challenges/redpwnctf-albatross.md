@@ -50,10 +50,9 @@ if __name__ == '__main__':
 
     # execute payload
     eval(str(payload), {'__builtins__' : None}, {})
-
 ```
 
-This combines a traditional PyJail escape (with draconian conditions) with code golfing - one of my favourite pastimes.&#x20;
+This combines a traditional PyJail escape (with draconian conditions) with code golfing - one of my favourite pastimes.
 
 Let's break down what we've been given - the comment tells us that the flag is in flag.txt, so our ultimate goal is to construct a payload to allow us to read /flag.txt - this could directly open and read the file, or more indirectly we could obtain a shell, and use that shell to read the file.
 
@@ -71,7 +70,7 @@ First, our payload is filtered -
         exit()
 ```
 
-This prevents us from passing any payload containing any of the characters in the blacklist by replacing each instance of a banned character with nothing - as&#x20;
+This prevents us from passing any payload containing any of the characters in the blacklist by replacing each instance of a banned character with nothing - as
 
 ```python
 blacklist = string.ascii_letters + '"\' ' 
@@ -95,13 +94,13 @@ if __name__ == '__main__':
     )
 ```
 
-This is the code golfing aspect of the challenge - with a starting character limit of 30,  every hour the amount of characters allowed increases by 2 - an ingenious method to promote code golfing, as the limit stops increasing once a solve has been found - so solving it earlier makes it harder for anyone else to solve!
+This is the code golfing aspect of the challenge - with a starting character limit of 30, every hour the amount of characters allowed increases by 2 - an ingenious method to promote code golfing, as the limit stops increasing once a solve has been found - so solving it earlier makes it harder for anyone else to solve!
 
 ```python
 eval(str(payload), {'__builtins__' : None}, {})
 ```
 
-Finally, our payload is executed via eval - but with a twist. The eval function actually takes two optional arguments as well as a string to evaluate -`eval(source, globals=None, locals=None, /)`. This is because Python actually keeps track of local and global variables by storing them in their own dictionaries - you can see this by running `globals()` or `locals()` in a Python interpreter session -&#x20;
+Finally, our payload is executed via eval - but with a twist. The eval function actually takes two optional arguments as well as a string to evaluate -`eval(source, globals=None, locals=None, /)`. This is because Python actually keeps track of local and global variables by storing them in their own dictionaries - you can see this by running `globals()` or `locals()` in a Python interpreter session -
 
 ```python
 >>> print(locals())
@@ -110,7 +109,7 @@ Finally, our payload is executed via eval - but with a twist. The eval function 
 {'__name__': '__main__', '__doc__': None, '__package__': None, '__loader__': <class '_frozen_importlib.BuiltinImporter'>, '__spec__': None, '__annotations__': {}, '__builtins__': <module 'builtins' (buirlt-in)>}.
 ```
 
-Most important of all the items in this dictionary is `__builtins__` - this points to a module containing all of the built-in functions that Python provides for you when you first start writing a program. This includes standard functions like `print()`, `chr()` and `open()`, but also apparent syntax constructs like import - since `import x` is transformed into `__import__("x")`in parsing.&#x20;
+Most important of all the items in this dictionary is `__builtins__` - this points to a module containing all of the built-in functions that Python provides for you when you first start writing a program. This includes standard functions like `print()`, `chr()` and `open()`, but also apparent syntax constructs like import - since `import x` is transformed into `__import__("x")`in parsing.
 
 So, to circle all the way back around, eval allows you to set what the values of these two dictionaries will be when the given code is executed - in our example, they have been hardcoded to be empty with the `__builtins__` option specifically set to None. This means that we do not have access to any of Python's built-in functions!
 
@@ -118,7 +117,7 @@ In summary, with the restrictions levied above we must somehow provide Python co
 
 This may seem impossible at first (as the creators of the challenge warned us in the code comment!) so let's try dealing with one restriction at a time - the easiest one to tackle first is the lack of built-in functions.
 
-Having your code executed without `__builtins__` is the traditional PyJail setup, and thus there are multitudinous resources available detailing how to bypass this restriction. To give a summary, in Python everything is an object, and there are special attributes common to practically every object - for example, `__doc__` stores a docstring describing the object and `__dict__` stores a dictionary of all the attributes of that object. The plan is to use Python's inheritance mechanisms to obtain access to a copy of `__builtins__` stored somewhere within an object - we may not have access to functions, but we can obtain a class (in this case, the Tuple class, but any class could theoretically work) like so -
+Having your code executed without `__builtins__` is the traditional PyJail setup, and thus there are multitudinous resources available detailing how to bypass this restriction. To give a summary, in Python everything is an object, and there are special attributes common to practically every object - for example, `__doc__` stores a docstring describing the object and `__dict__` stores a dictionary of all the attributes of that object. The plan is to use Python's inheritance mechanisms to obtain access to a class with useful values in its globals (for example, `__builtins__` or the `system` function) - we may not have access to functions, but we can obtain a class (in this case, the Tuple class, but any class could theoretically work) like so -
 
 ```python
 >>> ().__class__
@@ -139,7 +138,7 @@ As practically everything in Python is an object, this class is the base for pra
 [<class 'type'>, <class 'weakref'>, <class 'weakcallableproxy'>, ... ]
 ```
 
-We can now use these objects to break out from our rather restricted environment - the most commonly chosen object from this list is the catch\_warnings object from the warnings module, found at position 139 in my example object list - this is because this object uses the `sys` module as part of its `__init__` function, and thus has the `sys` module present in its global variables. As can be seen from [https://github.com/python/cpython/blob/main/Lib/warnings.py](https://github.com/python/cpython/blob/main/Lib/warnings.py),&#x20;
+We can now use these objects to break out from our rather restricted environment - the most commonly chosen object from this list is the catch\_warnings object from the warnings module, found at position 139 in my example object list - this is because this object uses the `sys` module as part of its `__init__` function, and thus has the `sys` module present in its global variables. As can be seen from [https://github.com/python/cpython/blob/main/Lib/warnings.py](https://github.com/python/cpython/blob/main/Lib/warnings.py),
 
 ```python
 class catch_warnings(object):
@@ -155,7 +154,6 @@ class catch_warnings(object):
         self._record = record
         self._module = sys.modules['warnings'] if module is None else module
         self._entered = False
-
 ```
 
 In turn, the `sys` module imports the `os` module, and keeps a list of which modules it has imported in `modules` - the `os` module contains the `system` function - capable of executing a string passed to it and dumping the result to stdout - this is my ultimate goal. Putting all of that together, in my example I can obtain access to the system function like this, and thus give myself a shell
@@ -169,7 +167,7 @@ In turn, the `sys` module imports the `os` module, and keeps a list of which mod
 $ 
 ```
 
-This solves our first problem, but this payload needs to contain no quotes, letters and spaces, as well as be short enough to qualify to solve this challenge. First, we can improve the length of this slightly - we could get access to `__builtins__` directly from the `sys` module, as it has its own copy, but we can note that the top of the file it does `import string, os` meaning that their code actually has `os` already imported as a global, and some objects from `os` are present in the overall object list. Some enumeration revealed some promising candidates - I chose `os._wrap_close` - it was present in the overall object space, and as part of the os module it also had every single other function from `os` present in its globals - this meant I could shorten my payload considerably like so
+This solves our first problem, but this payload needs to contain no quotes, letters and spaces, as well as be short enough to qualify to solve this challenge. First, we can improve the length of this slightly - we could get access to `__builtins__` directly from the `sys` module, as it has its own copy, but we can note that at the top of the provided code it does `import string, os` - meaning that their code actually has `os` already imported as a global, and some objects from `os` are present in the overall object list. Some enumeration revealed some promising candidates - I chose `os._wrap_close` - it was present in the overall object space, and as part of the os module it also had every single other function from `os` present in its globals - this meant I could shorten my payload considerably like so
 
 ```python
 >>> ().__class__.__base__.__subclasses__()[132]
@@ -189,7 +187,7 @@ Next, I decided to remove the quotes. Earlier, I mentioned that most objects hav
 'sh'
 ```
 
-But rather than try and construct "system", I resolved to instead turn it into an offset - since `__globals__` is a dictionary, I couldn't access it using a position like an array. But, if I could transform that dictionary into an array I could use the position in the list to access my chosen object without any quotes necessary! I used the `dict.values()` function - this takes a dictionary and returns an array of the values of each item in that dictionary. It was almost perfect - except&#x20;
+But rather than try and construct "system", I resolved to instead turn it into an offset - since `__globals__` is a dictionary, I couldn't access it using a position like an array. But, if I could transform that dictionary into an array I could use the position in the list to access my chosen object without any quotes necessary! I used the `dict.values()` function - this takes a dictionary and returns an array of the values of each item in that dictionary. It was almost perfect - except
 
 ```python
 >>> x = {"a": 1, "b": 2}
