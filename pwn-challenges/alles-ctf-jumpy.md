@@ -205,7 +205,7 @@ const instruction_t INSNS[3] = {
 };
 ```
 
-The ret we've seen before, filling the memory page - we also have the first byte of a short jump instruction ([https://www.felixcloutier.com/x86/jmp](https://www.felixcloutier.com/x86/jmp)) and the first byte of a `mov eax, 32_bit_immediate` instruction ([https://www.felixcloutier.com/x86/mov](https://www.felixcloutier.com/x86/mov)). The loop itself is very simple - it reads up to 9 characters of an opcode (stopping at whitespace) into opcode, and verifies the opcode is valid. If it is, it uses an additional emit\_x function to emit the right sized immediate for the function - i.e. a 32 bit integer for the moveax function, taken in via %d. We can send as many instructions as we want, stopping at an EOF - although if we exceed more than 0x1000 bytes of output we'll run off the end of the mapped page and crash when writing the next opcode. The most interesting of the 3 instructions by far is jmp - the writer has levied an additional restriction on the jmp instruction,
+The ret we've seen before, filling the memory page - we also have the first byte of a short jump instruction ([https://www.felixcloutier.com/x86/jmp](https://www.felixcloutier.com/x86/jmp)) and the first byte of a `mov eax, 32_bit_immediate` instruction ([https://www.felixcloutier.com/x86/mov](https://www.felixcloutier.com/x86/mov)). The loop itself is very simple - it reads up to 9 characters of an opcode (stopping at whitespace) into opcode, and verifies the opcode is valid. If it is, it uses an additional emit\_x function to emit the right sized immediate for the function - i.e. a 32 bit integer for the moveax function, taken in via %d. We can send as many instructions as we want, stopping at an EOF or an invalid opcode - although if we exceed more than 0x1000 bytes of output we'll run off the end of the mapped page and crash when writing the next opcode. The most interesting of the 3 instructions by far is jmp - the writer has levied an additional restriction on the jmp instruction,
 
 ```c
             case OP_SHORT_JMP:
@@ -251,7 +251,7 @@ eb01b890909090
    ----
 ```
 
-The arrow shows the path of the jump - because it jumps into the immediate part of the instruction, rather than hitting the first byte of the mov, it begins executing at the 0x90 - this is a nop. In this way, we could store two-byte instructions inside moveax's, and run them via a jmp, chaining them together in the order mov, jmp, mov, jmp, etc. However, they have specifically prevented this with the extra check on the jmp - luckily, they don't check to an arbitrary depth - only the instructions which were originally jmps! This means that if we hide a short jump inside a moveax, and then jump to that, we can bypass the check - because it will detect the target of the second jump to be a valid opcode, another short jump, as shown in this example -
+The arrow shows the path of the jump - because it jumps into the immediate part of the instruction, rather than hitting the first byte of the mov, it begins executing at the 0x90 - this is a nop. In this way, we could store four-byte instructions inside moveax's, and run them via a jmp, chaining them together in the order mov, jmp, mov, jmp, etc. However, they have specifically prevented this with the extra check on the jmp - luckily, they don't check to an arbitrary depth - only the instructions which were originally jmps! This means that if we hide a short jump inside a moveax, and then jump to that, we can bypass the check - because it will detect the target of the second jump to be a valid opcode, another short jump, as shown in this example -
 
 ```
 jmp 1; mov eax 0x909003eb; mov eax 0x90909090;
@@ -266,4 +266,6 @@ eb01b8eb039090b890909090
 
 By chaining these together, we can execute a maximum of one 4 byte instruction per 12 bytes, more than enough to give myself a shell! For a challenge, it's also possible to solve this by chaining together 2 byte instructions (before the short jump) every 5 bytes for slightly better efficiency, but getting a shell with only 2 byte instructions requires considerably more instructions (although it is definitely possible, as I have done it for a previous challenge - lots of implicit imuls!). All that's left for us to do now is to write a 64 bit assembly stub to give us a shell (being careful to use no more than 4 bytes per instruction) and transform it into a chain of jmps and moveax's for the program.
 
-TODO: include my code to do this
+My code to do this is below - I didn't have to store /bin/sh somewhere and point to it because my last input is stored on the stack - since the program stops receiving input and runs my code upon receiving EOF or an invalid instruction, I can send my payload, followed by /bin/sh\x00, to store that string on the stack ready for me to use it in my execve() call.
+
+TODO: include code
