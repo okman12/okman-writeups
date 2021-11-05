@@ -159,7 +159,7 @@ This is quite hefty, so we'll break down what it does in chunks -&#x20;
     size_t jump_target_cnt = 0;
 ```
 
-main first informs us that this could have been a v8 patch, but it isn't (thank god - look at my Kit Engine and Download Horsepower writeups if you want to see the horror of v8 exploitation). Next, it maps 0x1000 bytes of memory at a very elite address (0x1337000000), marking the memory region as RW - no execute permissions. Lastly, it sets the every byte in the region to be 0xc3 - this is a clue for what this section is going to be used for later, because this is an encoding for the `ret` instruction - [https://www.felixcloutier.com/x86/ret](https://www.felixcloutier.com/x86/ret) - and it informs us that the "supported instructions" are moveax with a 32 bit immediate, jmp with an 8 bit immediate and ret.
+`main` first informs us that this could have been a v8 patch, but it isn't (thank god - look at my Kit Engine and Download Horsepower writeups if you want to see the horror of v8 exploitation). Next, it maps 0x1000 bytes of memory at a very elite address (0x1337000000), marking the memory region as RW - no execute permissions. Lastly, it sets the every byte in the region to be 0xc3 - this is a clue for what this section is going to be used for later, because this is an encoding for the `ret` instruction - [https://www.felixcloutier.com/x86/ret](https://www.felixcloutier.com/x86/ret) - and it informs us that the "supported instructions" are moveax with a 32 bit immediate, jmp with an 8 bit immediate and ret.
 
 ```c
     {
@@ -191,7 +191,7 @@ main first informs us that this could have been a v8 patch, but it isn't (thank 
     }
 ```
 
-&#x20;Now we enter the while loop which takes our input - as you could have guessed from what it printed previously, this is a miniature assembler - and it only allows three instructions, the three we were shown before - these are translated as
+Now we enter the while loop which takes our input - as you could have guessed from what it printed previously, this is a miniature assembler - and it only allows three instructions, the three we were shown before - these are translated as
 
 ```c
 const uint8_t OP_RET = 0xc3;
@@ -205,7 +205,7 @@ const instruction_t INSNS[3] = {
 };
 ```
 
-The ret we've seen before, filling the memory page - we also have the first byte of a short jump instruction ([https://www.felixcloutier.com/x86/jmp](https://www.felixcloutier.com/x86/jmp)) and the first byte of a `mov eax, 32_bit_immediate` instruction ([https://www.felixcloutier.com/x86/mov](https://www.felixcloutier.com/x86/mov)). The loop itself is very simple - it reads up to 9 characters of an opcode (stopping at whitespace) into opcode, and verifies the opcode is valid. If it is, it uses an additional emit\_x function to emit the right sized immediate for the function - i.e. a 32 bit integer for the moveax function, taken in via %d. We can send as many instructions as we want, stopping at an EOF or an invalid opcode - although if we exceed more than 0x1000 bytes of output we'll run off the end of the mapped page and crash when writing the next opcode. The most interesting of the 3 instructions by far is jmp - the writer has levied an additional restriction on the jmp instruction,
+There's the ret we've seen before, filling the memory page - we also have the first byte of a short jump instruction ([https://www.felixcloutier.com/x86/jmp](https://www.felixcloutier.com/x86/jmp)) and the first byte of a `mov eax, 32_bit_immediate` instruction ([https://www.felixcloutier.com/x86/mov](https://www.felixcloutier.com/x86/mov)). The loop itself is very simple - it reads up to 9 characters of an opcode (stopping at whitespace) into opcode, and verifies the opcode is valid. If it is, it uses an additional emit\_x function to emit the right sized immediate for the function - i.e. a 32 bit integer for the moveax function, taken in via scanf with %d. We can send as many instructions as we want, stopping at an EOF or an invalid opcode - although if we exceed more than 0x1000 bytes of output we'll run off the end of the mapped page and crash when writing the next opcode. The most interesting of the 3 instructions by far is jmp, as the writer has levied an additional restriction on the jmp instruction,
 
 ```c
             case OP_SHORT_JMP:
@@ -237,7 +237,7 @@ It stores an array of all the addresses which our jump instructions target, and 
     printf("result: 0x%lx\n", code());
 ```
 
-Finally, C is convinced that the pointer to the start of the page where we wrote our input is actually a function that returns a 64 bit integer. It then changes the protections of the page from RW to RX, preventing self modifying code (which would require RWX), sets a 5 second timer, runs our code and tells us the result.
+Finally, C is convinced that the pointer to the start of the page where we wrote our input is actually a function that returns a 64 bit integer. It then changes the protections of the page from RW to RX, preventing self modifying code (which would require RWX), sets a 5 second timer, executes our code and tells us the result.
 
 So, how do we exploit it? The ret and moveax are useless on their own - the ret will just transfer back to the main function, and overwriting the value in eax does not help us - the only instruction we can possibly use to break out is the jmp. The key is in the extra check added to the jmp - why check if the target is a valid opcode if you can only emit those opcodes? The check is to prevent this scenario -&#x20;
 
@@ -251,7 +251,7 @@ eb01b890909090
    ----
 ```
 
-The arrow shows the path of the jump - because it jumps into the immediate part of the instruction, rather than hitting the first byte of the mov, it begins executing at the 0x90 - this is a nop. In this way, we could store four-byte instructions inside moveax's, and run them via a jmp, chaining them together in the order mov, jmp, mov, jmp, etc. However, they have specifically prevented this with the extra check on the jmp - luckily, they don't check to an arbitrary depth - only the instructions which were originally jmps! This means that if we hide a short jump inside a moveax, and then jump to that, we can bypass the check - because it will detect the target of the second jump to be a valid opcode, another short jump, as shown in this example -
+The arrow shows the path of the jump - because it jumps into the immediate part of the instruction, rather than hitting the first byte of the mov, it begins executing at the 0x90 - this is a nop. In this way, we could store four-byte instructions inside moveax's, and run them via a jmp, chaining them together in the order mov, jmp, mov, jmp, etc. However, they have specifically prevented this with the extra check on the jmp - luckily, they don't check to an arbitrary depth - only the instructions which were originally jmps! This means that if we hide a short jump inside a moveax, and then jump to that, we can bypass the check - because it will detect the target of the first jump to be a valid opcode, another short jump, as shown in this example -
 
 ```
 jmp 1; mov eax 0x909003eb; mov eax 0x90909090;
